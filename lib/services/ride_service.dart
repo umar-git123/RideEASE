@@ -35,6 +35,14 @@ class RideService {
     }).eq('id', rideId);
   }
 
+  // Driver arrived at pickup location
+  Future<void> arrivedAtPickup(String rideId) async {
+    await _supabase.from('rides').update({
+      'status': 'arrived',
+    }).eq('id', rideId);
+  }
+
+
   // STREAM: Realtime ride updates
   Stream<List<Map<String, dynamic>>> getRideStream(String rideId) {
     return _supabase

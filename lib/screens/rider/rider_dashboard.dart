@@ -206,10 +206,10 @@ class _RiderDashboardState extends State<RiderDashboard> {
             ),
           ),
           
-          // My Location Button
+          // My Location Button - moved to top near SOS button
           Positioned(
-            right: 20,
-            bottom: (currentRide == null ? 200 : 320),
+            top: MediaQuery.of(context).padding.top + 10,
+            right: 76, // Left of SOS button
             child: Container(
               decoration: BoxDecoration(
                 color: AppTheme.backgroundCard,
@@ -527,6 +527,10 @@ class _RiderDashboardState extends State<RiderDashboard> {
               ),
             ),
           );
+        },
+        onDone: () {
+          rideProvider.clearCurrentRide();
+          _driverData = null;
         },
       );
     }

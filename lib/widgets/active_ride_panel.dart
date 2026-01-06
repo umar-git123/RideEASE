@@ -10,6 +10,7 @@ class ActiveRidePanel extends StatelessWidget {
   final VoidCallback? onCancel;
   final VoidCallback? onCall;
   final VoidCallback? onMessage;
+  final VoidCallback? onDone;
 
   const ActiveRidePanel({
     Key? key,
@@ -18,6 +19,7 @@ class ActiveRidePanel extends StatelessWidget {
     this.onCancel,
     this.onCall,
     this.onMessage,
+    this.onDone,
   }) : super(key: key);
 
   @override
@@ -324,11 +326,20 @@ class ActiveRidePanel extends StatelessWidget {
                   onPressed: onCancel ?? () {},
                 ),
               
-              if (ride.status == 'completed')
+              if (ride.status == 'completed') ...[
                 CustomButton(
                   text: 'Rate Your Driver',
+                  icon: Icons.star,
                   onPressed: () {},
                 ),
+                const SizedBox(height: 12),
+                CustomButton(
+                  text: 'Done',
+                  icon: Icons.check_circle,
+                  color: AppTheme.successColor,
+                  onPressed: onDone ?? () {},
+                ),
+              ],
             ],
           ),
         ),
@@ -415,6 +426,8 @@ class ActiveRidePanel extends StatelessWidget {
         return AppTheme.warningColor;
       case 'accepted':
         return AppTheme.primaryColor;
+      case 'arrived':
+        return AppTheme.successColor;
       case 'completed':
         return AppTheme.successColor;
       default:
@@ -428,8 +441,10 @@ class ActiveRidePanel extends StatelessWidget {
         return 'Finding Driver';
       case 'accepted':
         return 'Driver En Route';
+      case 'arrived':
+        return 'Driver Arrived!';
       case 'completed':
-        return 'Arrived';
+        return 'Ride Complete';
       default:
         return status;
     }
@@ -441,6 +456,8 @@ class ActiveRidePanel extends StatelessWidget {
         return 'Please wait...';
       case 'accepted':
         return 'Arriving in ~5 mins';
+      case 'arrived':
+        return 'Your driver is at the pickup location!';
       case 'completed':
         return 'Hope you enjoyed your ride!';
       default:

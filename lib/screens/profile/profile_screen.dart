@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/input_field.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -12,21 +14,35 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
+  bool _isSaving = false;
+  
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
+  late TextEditingController _vehicleMakeController;
+  late TextEditingController _vehicleModelController;
+  late TextEditingController _vehiclePlateController;
+  late TextEditingController _vehicleColorController;
 
   @override
   void initState() {
     super.initState();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    _nameController = TextEditingController(text: authProvider.currentUserData?.name ?? '');
-    _phoneController = TextEditingController(text: authProvider.currentUserData?.phone ?? '');
+    final user = Provider.of<AuthProvider>(context, listen: false).currentUserData;
+    _nameController = TextEditingController(text: user?.name ?? '');
+    _phoneController = TextEditingController(text: user?.phone ?? '');
+    _vehicleMakeController = TextEditingController(text: user?.vehicleMake ?? '');
+    _vehicleModelController = TextEditingController(text: user?.vehicleModel ?? '');
+    _vehiclePlateController = TextEditingController(text: user?.vehiclePlate ?? '');
+    _vehicleColorController = TextEditingController(text: user?.vehicleColor ?? '');
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _vehicleMakeController.dispose();
+    _vehicleModelController.dispose();
+    _vehiclePlateController.dispose();
+    _vehicleColorController.dispose();
     super.dispose();
   }
 
@@ -34,7 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUserData;
-    final theme = Theme.of(context);
+    final isDriver = user?.role == 'driver';
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
@@ -43,36 +59,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          TextButton(
-            onPressed: () {
-              setState(() => _isEditing = !_isEditing);
-            },
-            child: Text(
-              _isEditing ? 'Cancel' : 'Edit',
-              style: const TextStyle(color: AppTheme.primaryColor),
+          if (!_isEditing)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () => setState(() => _isEditing = true),
+            )
+          else
+            TextButton(
+              onPressed: () {
+                setState(() => _isEditing = false);
+                // Reset controllers
+                _nameController.text = user?.name ?? '';
+                _phoneController.text = user?.phone ?? '';
+                _vehicleMakeController.text = user?.vehicleMake ?? '';
+                _vehicleModelController.text = user?.vehicleModel ?? '';
+                _vehiclePlateController.text = user?.vehiclePlate ?? '';
+                _vehicleColorController.text = user?.vehicleColor ?? '';
+              },
+              child: const Text('Cancel'),
             ),
-          ),
         ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Profile Avatar
+            // Avatar
             Center(
               child: Stack(
                 children: [
                   Container(
-                    width: 120,
-                    height: 120,
+                    width: 100,
+                    height: 100,
                     decoration: BoxDecoration(
                       gradient: AppTheme.primaryGradient,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                           color: AppTheme.primaryColor.withOpacity(0.4),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
+                          blurRadius: 20,
                         ),
                       ],
                     ),
@@ -80,7 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Text(
                         (user?.name ?? 'U').substring(0, 1).toUpperCase(),
                         style: const TextStyle(
-                          fontSize: 48,
+                          fontSize: 40,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
@@ -94,221 +119,252 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppTheme.backgroundCard,
+                          color: AppTheme.primaryColor,
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppTheme.primaryColor,
-                            width: 2,
-                          ),
                         ),
                         child: const Icon(
                           Icons.camera_alt,
-                          color: AppTheme.primaryColor,
-                          size: 20,
+                          size: 16,
+                          color: Colors.black,
                         ),
                       ),
                     ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             
             // Role Badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: user?.role == 'driver' 
-                    ? AppTheme.accentGold.withOpacity(0.2)
-                    : AppTheme.primaryColor.withOpacity(0.2),
+                color: isDriver 
+                    ? AppTheme.accentGold.withOpacity(0.15)
+                    : AppTheme.primaryColor.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: user?.role == 'driver' 
-                      ? AppTheme.accentGold.withOpacity(0.3)
-                      : AppTheme.primaryColor.withOpacity(0.3),
-                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    user?.role == 'driver' ? Icons.drive_eta : Icons.person,
+                    isDriver ? Icons.drive_eta : Icons.person,
                     size: 16,
-                    color: user?.role == 'driver' 
-                        ? AppTheme.accentGold 
-                        : AppTheme.primaryColor,
+                    color: isDriver ? AppTheme.accentGold : AppTheme.primaryColor,
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    user?.role?.toUpperCase() ?? 'USER',
+                    isDriver ? 'Driver' : 'Rider',
                     style: TextStyle(
-                      color: user?.role == 'driver' 
-                          ? AppTheme.accentGold 
-                          : AppTheme.primaryColor,
+                      color: isDriver ? AppTheme.accentGold : AppTheme.primaryColor,
                       fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      letterSpacing: 1,
                     ),
                   ),
                 ],
               ),
             ),
+            
             const SizedBox(height: 32),
             
-            // Profile Fields
+            // Basic Info Section
             Container(
               decoration: AppTheme.cardDecoration(),
               padding: const EdgeInsets.all(20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildProfileField(
-                    icon: Icons.person_outline,
-                    label: 'Full Name',
-                    value: user?.name ?? 'Not set',
-                    controller: _nameController,
-                    isEditing: _isEditing,
+                  const Text(
+                    'Personal Information',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  const Divider(height: 32),
-                  _buildProfileField(
-                    icon: Icons.email_outlined,
-                    label: 'Email',
-                    value: user?.email ?? 'Not set',
-                    isEditing: false, // Email can't be edited
-                  ),
-                  const Divider(height: 32),
-                  _buildProfileField(
-                    icon: Icons.phone_outlined,
-                    label: 'Phone',
-                    value: user?.phone ?? 'Not set',
-                    controller: _phoneController,
-                    isEditing: _isEditing,
-                  ),
+                  const SizedBox(height: 20),
+                  
+                  if (_isEditing) ...[
+                    InputField(
+                      labelText: 'Full Name',
+                      controller: _nameController,
+                      prefixIcon: const Icon(Icons.person_outline),
+                    ),
+                    const SizedBox(height: 16),
+                    InputField(
+                      labelText: 'Phone Number',
+                      controller: _phoneController,
+                      keyboardType: TextInputType.phone,
+                      prefixIcon: const Icon(Icons.phone_outlined),
+                    ),
+                  ] else ...[
+                    _buildInfoRow(Icons.person_outline, 'Name', user?.name ?? 'Not set'),
+                    const SizedBox(height: 16),
+                    _buildInfoRow(Icons.email_outlined, 'Email', user?.email ?? 'Not set'),
+                    const SizedBox(height: 16),
+                    _buildInfoRow(Icons.phone_outlined, 'Phone', user?.phone ?? 'Not set'),
+                  ],
                 ],
               ),
             ),
             
-            if (_isEditing) ...[
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: Save profile changes
-                    setState(() => _isEditing = false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Profile updated successfully'),
-                        backgroundColor: AppTheme.successColor,
+            // Vehicle Info for Drivers
+            if (isDriver) ...[
+              const SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.accentGold.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.accentGold.withOpacity(0.2)),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.directions_car, color: AppTheme.accentGold, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Vehicle Information',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    if (_isEditing) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InputField(
+                              labelText: 'Make',
+                              controller: _vehicleMakeController,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: InputField(
+                              labelText: 'Model',
+                              controller: _vehicleModelController,
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                  child: const Text('Save Changes'),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InputField(
+                              labelText: 'Color',
+                              controller: _vehicleColorController,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: InputField(
+                              labelText: 'Plate',
+                              controller: _vehiclePlateController,
+                              textCapitalization: TextCapitalization.characters,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      _buildInfoRow(
+                        Icons.directions_car_outlined,
+                        'Vehicle',
+                        '${user?.vehicleMake ?? ''} ${user?.vehicleModel ?? ''}'.trim().isEmpty 
+                            ? 'Not set' 
+                            : '${user?.vehicleMake} ${user?.vehicleModel}',
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInfoRow(
+                        Icons.color_lens_outlined,
+                        'Color',
+                        user?.vehicleColor ?? 'Not set',
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInfoRow(
+                        Icons.credit_card,
+                        'Plate',
+                        user?.vehiclePlate ?? 'Not set',
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
             
-            const SizedBox(height: 32),
-            
-            // Stats Section
-            Container(
-              decoration: AppTheme.cardDecoration(),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Account Stats',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          icon: Icons.directions_car,
-                          label: 'Total Rides',
-                          value: '0',
-                          color: AppTheme.primaryColor,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          icon: Icons.star,
-                          label: 'Rating',
-                          value: '5.0',
-                          color: AppTheme.accentGold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+            // Save Button
+            if (_isEditing) ...[
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  text: 'Save Changes',
+                  isLoading: _isSaving,
+                  icon: Icons.check,
+                  onPressed: _saveChanges,
+                ),
               ),
-            ),
+            ],
             
-            const SizedBox(height: 32),
-            
-            // Danger Zone
-            Container(
-              decoration: AppTheme.cardDecoration(),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Danger Zone',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.errorColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.errorColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.delete_forever,
-                        color: AppTheme.errorColor,
+            // Account Stats
+            if (!_isEditing) ...[
+              const SizedBox(height: 20),
+              Container(
+                decoration: AppTheme.cardDecoration(),
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatItem(
+                        icon: Icons.star,
+                        value: '5.0',
+                        label: 'Rating',
+                        color: AppTheme.accentGold,
                       ),
                     ),
-                    title: const Text('Delete Account'),
-                    subtitle: Text(
-                      'Permanently delete your account and data',
-                      style: TextStyle(
-                        color: AppTheme.textMuted,
-                        fontSize: 12,
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                    Expanded(
+                      child: _buildStatItem(
+                        icon: Icons.directions_car,
+                        value: '0',
+                        label: 'Trips',
+                        color: AppTheme.primaryColor,
                       ),
                     ),
-                    trailing: const Icon(
-                      Icons.chevron_right,
-                      color: AppTheme.textMuted,
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: Colors.white.withOpacity(0.1),
                     ),
-                    onTap: () {
-                      // Show confirmation dialog
-                    },
-                  ),
-                ],
+                    Expanded(
+                      child: _buildStatItem(
+                        icon: Icons.calendar_today,
+                        value: _getMemberSince(user?.createdAt),
+                        label: 'Member Since',
+                        color: AppTheme.infoColor,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
+            
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileField({
-    required IconData icon,
-    required String label,
-    required String value,
-    TextEditingController? controller,
-    bool isEditing = false,
-  }) {
+  Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
         Container(
@@ -317,11 +373,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: AppTheme.primaryColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            color: AppTheme.primaryColor,
-            size: 20,
-          ),
+          child: Icon(icon, color: AppTheme.primaryColor, size: 20),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -335,28 +387,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   fontSize: 12,
                 ),
               ),
-              const SizedBox(height: 4),
-              if (isEditing && controller != null)
-                TextField(
-                  controller: controller,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                    border: InputBorder.none,
-                  ),
-                )
-              else
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 15,
                 ),
+              ),
             ],
           ),
         ),
@@ -364,42 +402,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatCard({
+  Widget _buildStatItem({
     required IconData icon,
-    required String label,
     required String value,
+    required String label,
     required Color color,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.2),
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: color,
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+        Text(
+          label,
+          style: TextStyle(
+            color: AppTheme.textMuted,
+            fontSize: 11,
           ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textMuted,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
+  }
+
+  String _getMemberSince(DateTime? date) {
+    if (date == null) return 'N/A';
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inDays < 30) return '${diff.inDays}d';
+    if (diff.inDays < 365) return '${(diff.inDays / 30).floor()}mo';
+    return '${(diff.inDays / 365).floor()}y';
+  }
+
+  Future<void> _saveChanges() async {
+    setState(() => _isSaving = true);
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isDriver = authProvider.currentUserData?.role == 'driver';
+    
+    final success = await authProvider.updateProfile(
+      name: _nameController.text.isNotEmpty ? _nameController.text : null,
+      phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+      vehicleMake: isDriver && _vehicleMakeController.text.isNotEmpty ? _vehicleMakeController.text : null,
+      vehicleModel: isDriver && _vehicleModelController.text.isNotEmpty ? _vehicleModelController.text : null,
+      vehiclePlate: isDriver && _vehiclePlateController.text.isNotEmpty ? _vehiclePlateController.text : null,
+      vehicleColor: isDriver && _vehicleColorController.text.isNotEmpty ? _vehicleColorController.text : null,
+    );
+    
+    setState(() {
+      _isSaving = false;
+      if (success) {
+        _isEditing = false;
+      }
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success ? 'Profile updated!' : 'Failed to update profile'),
+          backgroundColor: success ? AppTheme.successColor : AppTheme.errorColor,
+        ),
+      );
+    }
   }
 }

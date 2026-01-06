@@ -37,23 +37,44 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> signUp(String email, String password, String role) async {
+  Future<bool> signUp(
+    String email,
+    String password,
+    String role, {
+    String? name,
+    String? phone,
+    String? vehicleMake,
+    String? vehicleModel,
+    String? vehiclePlate,
+    String? vehicleColor,
+    String? vehicleYear,
+  }) async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
-      await _authService.signUp(email, password, role);
-      // After sign up, we usually need to sign in logic or just fetch data, 
-      // Supabase auto signs in on sign up if email confirmation is disabled.
+      
+      await _authService.signUp(
+        email,
+        password,
+        role,
+        name: name,
+        phone: phone,
+        vehicleMake: vehicleMake,
+        vehicleModel: vehicleModel,
+        vehiclePlate: vehiclePlate,
+        vehicleColor: vehicleColor,
+        vehicleYear: vehicleYear,
+      );
+      
       final user = _authService.currentUser;
       if (user != null) {
         await _fetchUserData(user.id);
         return true;
       }
       _error = 'Email confirmation may be required. Check your inbox.';
-      return false; // Email confirmation might be required
+      return false;
     } catch (e) {
-      // Show the actual error message
       _error = e.toString();
       debugPrint('Signup error: $e');
       return false;
@@ -77,12 +98,68 @@ class AuthProvider extends ChangeNotifier {
       _error = 'Login failed. Please check your credentials.';
       return false;
     } catch (e) {
-      _error = 'Login failed: ${e.toString()}'; // Simple error message
+      _error = 'Login failed: ${e.toString()}';
       debugPrint(e.toString());
       return false;
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> updateProfile({
+    String? name,
+    String? phone,
+    String? vehicleMake,
+    String? vehicleModel,
+    String? vehiclePlate,
+    String? vehicleColor,
+    String? vehicleYear,
+  }) async {
+    if (_currentUserData == null) return false;
+    
+    try {
+      _isLoading = true;
+      notifyListeners();
+      
+      final success = await _authService.updateUserProfile(
+        userId: _currentUserData!.id,
+        name: name,
+        phone: phone,
+        vehicleMake: vehicleMake,
+        vehicleModel: vehicleModel,
+        vehiclePlate: vehiclePlate,
+        vehicleColor: vehicleColor,
+        vehicleYear: vehicleYear,
+      );
+      
+      if (success) {
+        // Update local data
+        _currentUserData = _currentUserData!.copyWith(
+          name: name,
+          phone: phone,
+          vehicleMake: vehicleMake,
+          vehicleModel: vehicleModel,
+          vehiclePlate: vehiclePlate,
+          vehicleColor: vehicleColor,
+          vehicleYear: vehicleYear,
+        );
+      }
+      
+      return success;
+    } catch (e) {
+      _error = 'Failed to update profile: $e';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Refresh user data from server
+  Future<void> refreshUserData() async {
+    if (_currentUserData != null) {
+      await _fetchUserData(_currentUserData!.id);
     }
   }
 

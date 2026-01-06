@@ -1,13 +1,22 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../core/constants.dart';
 import '../models/user_model.dart';
 
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  Future<AuthResponse> signUp(String email, String password, String role) async {
+  Future<AuthResponse> signUp(
+    String email,
+    String password,
+    String role, {
+    String? name,
+    String? phone,
+    String? vehicleMake,
+    String? vehicleModel,
+    String? vehiclePlate,
+    String? vehicleColor,
+    String? vehicleYear,
+  }) async {
     try {
-      // 1. Sign up with Supabase Auth
       print('DEBUG: Starting signup for $email');
       final response = await _supabase.auth.signUp(
         email: email,
@@ -15,15 +24,28 @@ class AuthService {
       );
       print('DEBUG: Auth signup response: ${response.user?.id}');
 
-      // 2. Insert into public.users table if sign up is successful
       if (response.user != null) {
         print('DEBUG: Inserting user into public.users table...');
-        await _supabase.from('users').insert({
+        
+        final userData = {
           'id': response.user!.id,
           'email': email,
+          'name': name ?? email.split('@')[0],
           'role': role,
+          'phone': phone,
           'created_at': DateTime.now().toIso8601String(),
-        });
+        };
+
+        // Add vehicle info for drivers
+        if (role == 'driver') {
+          userData['vehicle_make'] = vehicleMake;
+          userData['vehicle_model'] = vehicleModel;
+          userData['vehicle_plate'] = vehiclePlate;
+          userData['vehicle_color'] = vehicleColor;
+          userData['vehicle_year'] = vehicleYear;
+        }
+
+        await _supabase.from('users').insert(userData);
         print('DEBUG: User inserted successfully');
       }
 
@@ -56,8 +78,41 @@ class AuthService {
           .single();
       return UserModel.fromJson(data);
     } catch (e) {
-      // Handle error or return null
       return null;
+    }
+  }
+
+  Future<bool> updateUserProfile({
+    required String userId,
+    String? name,
+    String? phone,
+    String? vehicleMake,
+    String? vehicleModel,
+    String? vehiclePlate,
+    String? vehicleColor,
+    String? vehicleYear,
+  }) async {
+    try {
+      final updateData = <String, dynamic>{};
+      
+      if (name != null) updateData['name'] = name;
+      if (phone != null) updateData['phone'] = phone;
+      if (vehicleMake != null) updateData['vehicle_make'] = vehicleMake;
+      if (vehicleModel != null) updateData['vehicle_model'] = vehicleModel;
+      if (vehiclePlate != null) updateData['vehicle_plate'] = vehiclePlate;
+      if (vehicleColor != null) updateData['vehicle_color'] = vehicleColor;
+      if (vehicleYear != null) updateData['vehicle_year'] = vehicleYear;
+
+      if (updateData.isNotEmpty) {
+        await _supabase
+            .from('users')
+            .update(updateData)
+            .eq('id', userId);
+      }
+      return true;
+    } catch (e) {
+      print('DEBUG UPDATE ERROR: $e');
+      return false;
     }
   }
 }

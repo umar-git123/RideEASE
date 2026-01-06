@@ -14,14 +14,14 @@ dependencies:
   # Supabase
   supabase_flutter: ^2.8.1
   
-  # Sate Management
+  # State Management
   provider: ^6.1.2
   
   # Maps (OpenStreetMap)
   flutter_map: ^7.0.0
   latlong2: ^0.9.1
   
-  # Location associated
+  # Location
   geolocator: ^13.0.1
   
   # Utilities

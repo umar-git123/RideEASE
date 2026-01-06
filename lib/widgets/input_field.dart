@@ -11,6 +11,7 @@ class InputField extends StatelessWidget {
   final String? Function(String?)? validator;
   final bool readOnly;
   final VoidCallback? onTap;
+  final TextCapitalization textCapitalization;
 
   const InputField({
     Key? key,
@@ -24,6 +25,7 @@ class InputField extends StatelessWidget {
     this.validator,
     this.readOnly = false,
     this.onTap,
+    this.textCapitalization = TextCapitalization.none,
   }) : super(key: key);
 
   @override
@@ -35,6 +37,7 @@ class InputField extends StatelessWidget {
       validator: validator,
       readOnly: readOnly,
       onTap: onTap,
+      textCapitalization: textCapitalization,
       style: const TextStyle(fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         hintText: hintText,
@@ -45,3 +48,4 @@ class InputField extends StatelessWidget {
     );
   }
 }
+

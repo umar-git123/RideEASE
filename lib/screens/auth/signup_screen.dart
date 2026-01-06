@@ -18,13 +18,37 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  // Driver vehicle info
+  final _vehicleMakeController = TextEditingController();
+  final _vehicleModelController = TextEditingController();
+  final _vehiclePlateController = TextEditingController();
+  final _vehicleColorController = TextEditingController();
+  final _vehicleYearController = TextEditingController();
+  
   final _formKey = GlobalKey<FormState>();
   String _selectedRole = AppConstants.kRiderRole;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _nameController.dispose();
+    _phoneController.dispose();
+    _vehicleMakeController.dispose();
+    _vehicleModelController.dispose();
+    _vehiclePlateController.dispose();
+    _vehicleColorController.dispose();
+    _vehicleYearController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final theme = Theme.of(context);
+    final isDriver = _selectedRole == AppConstants.kDriverRole;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
@@ -51,7 +75,6 @@ class _SignupScreenState extends State<SignupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 10),
                 // Icon with glow
                 Center(
                   child: Container(
@@ -67,14 +90,14 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.person_add_rounded,
+                    child: Icon(
+                      isDriver ? Icons.drive_eta : Icons.person_add_rounded,
                       size: 44,
                       color: Colors.black,
                     ),
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
                 Text(
                   'Create Account',
                   textAlign: TextAlign.center,
@@ -86,12 +109,54 @@ class _SignupScreenState extends State<SignupScreen> {
                 Text(
                   'Join RideEase today',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 32),
+                
+                // Role Selection
+                Text(
+                  'I want to be a',
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildRoleCard(
+                        icon: Icons.person,
+                        label: 'Rider',
+                        isSelected: !isDriver,
+                        onTap: () => setState(() => _selectedRole = AppConstants.kRiderRole),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildRoleCard(
+                        icon: Icons.drive_eta,
+                        label: 'Driver',
+                        isSelected: isDriver,
+                        onTap: () => setState(() => _selectedRole = AppConstants.kDriverRole),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 28),
+                
+                // Basic Info
+                InputField(
+                  labelText: 'Full Name',
+                  hintText: 'John Doe',
+                  controller: _nameController,
+                  prefixIcon: const Icon(Icons.person_outline),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
                 InputField(
                   labelText: 'Email',
                   hintText: 'hello@example.com',
@@ -108,7 +173,15 @@ class _SignupScreenState extends State<SignupScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                InputField(
+                  labelText: 'Phone Number',
+                  hintText: '+1 (555) 123-4567',
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  prefixIcon: const Icon(Icons.phone_outlined),
+                ),
+                const SizedBox(height: 16),
                 InputField(
                   labelText: 'Password',
                   hintText: '••••••••',
@@ -122,99 +195,96 @@ class _SignupScreenState extends State<SignupScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
                 
-                // Role Selection Cards
-                Text(
-                  'I want to be a',
-                  style: TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 13,
+                // Driver Vehicle Info
+                if (isDriver) ...[
+                  const SizedBox(height: 28),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentGold.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.accentGold.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.directions_car, color: AppTheme.accentGold, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Vehicle Information',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.accentGold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InputField(
+                                labelText: 'Make',
+                                hintText: 'Toyota',
+                                controller: _vehicleMakeController,
+                                validator: isDriver ? (v) => v?.isEmpty == true ? 'Required' : null : null,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: InputField(
+                                labelText: 'Model',
+                                hintText: 'Camry',
+                                controller: _vehicleModelController,
+                                validator: isDriver ? (v) => v?.isEmpty == true ? 'Required' : null : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InputField(
+                                labelText: 'Year',
+                                hintText: '2022',
+                                controller: _vehicleYearController,
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: InputField(
+                                labelText: 'Color',
+                                hintText: 'Silver',
+                                controller: _vehicleColorController,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        InputField(
+                          labelText: 'License Plate',
+                          hintText: 'ABC-1234',
+                          controller: _vehiclePlateController,
+                          textCapitalization: TextCapitalization.characters,
+                          validator: isDriver ? (v) => v?.isEmpty == true ? 'Required' : null : null,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildRoleCard(
-                        icon: Icons.person,
-                        label: 'Rider',
-                        isSelected: _selectedRole == AppConstants.kRiderRole,
-                        onTap: () => setState(() => _selectedRole = AppConstants.kRiderRole),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildRoleCard(
-                        icon: Icons.drive_eta,
-                        label: 'Driver',
-                        isSelected: _selectedRole == AppConstants.kDriverRole,
-                        onTap: () => setState(() => _selectedRole = AppConstants.kDriverRole),
-                      ),
-                    ),
-                  ],
-                ),
+                ],
                 
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
                 CustomButton(
-                  text: 'Sign Up',
+                  text: 'Create Account',
                   isLoading: authProvider.isLoading,
-                  onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      final success = await authProvider.signUp(
-                        _emailController.text,
-                        _passwordController.text,
-                        _selectedRole,
-                      );
-                      
-                      if (success && mounted) {
-                        if (_selectedRole == AppConstants.kRiderRole) {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const RiderDashboard()),
-                          );
-                        } else {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const DriverDashboard()),
-                          );
-                        }
-                      } else if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(authProvider.error ?? 'Signup failed. Try again.'),
-                            backgroundColor: AppTheme.errorColor,
-                          ),
-                        );
-                      }
-                    }
-                  },
+                  onPressed: _handleSignup,
                 ),
-                const SizedBox(height: 28),
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'OR',
-                        style: TextStyle(color: AppTheme.textMuted),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
-                  ],
-                ),
-                const SizedBox(height: 28),
-                // Social Signup
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildSocialButton(Icons.g_mobiledata, 'Google'),
-                    const SizedBox(width: 16),
-                    _buildSocialButton(Icons.apple, 'Apple'),
-                  ],
-                ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -228,6 +298,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -283,28 +354,44 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildSocialButton(IconData icon, String label) {
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppTheme.backgroundCard,
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 24, color: AppTheme.textPrimary),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ),
+  Future<void> _handleSignup() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isDriver = _selectedRole == AppConstants.kDriverRole;
+    
+    final success = await authProvider.signUp(
+      _emailController.text,
+      _passwordController.text,
+      _selectedRole,
+      name: _nameController.text.isNotEmpty ? _nameController.text : null,
+      phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+      vehicleMake: isDriver ? _vehicleMakeController.text : null,
+      vehicleModel: isDriver ? _vehicleModelController.text : null,
+      vehiclePlate: isDriver ? _vehiclePlateController.text : null,
+      vehicleColor: isDriver ? _vehicleColorController.text : null,
+      vehicleYear: isDriver ? _vehicleYearController.text : null,
     );
+    
+    if (success && mounted) {
+      if (_selectedRole == AppConstants.kRiderRole) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RiderDashboard()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DriverDashboard()),
+        );
+      }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.error ?? 'Signup failed. Try again.'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
   }
 }

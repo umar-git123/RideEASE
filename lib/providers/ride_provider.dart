@@ -157,9 +157,58 @@ class RideProvider extends ChangeNotifier {
   Future<void> completeRide(String rideId) async {
     stopLocationTracking(); // Stop tracking
     await _rideService.completeRide(rideId);
-    _currentRide = null; 
+    // Don't clear currentRide here, let the UI show completion summary
+    if (_currentRide != null) {
+      _currentRide = RideModel(
+        id: _currentRide!.id,
+        riderId: _currentRide!.riderId,
+        driverId: _currentRide!.driverId,
+        pickupLat: _currentRide!.pickupLat,
+        pickupLng: _currentRide!.pickupLng,
+        destinationLat: _currentRide!.destinationLat,
+        destinationLng: _currentRide!.destinationLng,
+        pickupAddress: _currentRide!.pickupAddress,
+        destinationAddress: _currentRide!.destinationAddress,
+        fare: _currentRide!.fare,
+        status: 'completed',
+        createdAt: _currentRide!.createdAt,
+      );
+    }
     notifyListeners();
   }
+
+  // Driver arrived at pickup - notify rider
+  Future<void> arrivedAtPickup(String rideId) async {
+    await _rideService.arrivedAtPickup(rideId);
+    if (_currentRide != null) {
+      _currentRide = RideModel(
+        id: _currentRide!.id,
+        riderId: _currentRide!.riderId,
+        driverId: _currentRide!.driverId,
+        pickupLat: _currentRide!.pickupLat,
+        pickupLng: _currentRide!.pickupLng,
+        destinationLat: _currentRide!.destinationLat,
+        destinationLng: _currentRide!.destinationLng,
+        pickupAddress: _currentRide!.pickupAddress,
+        destinationAddress: _currentRide!.destinationAddress,
+        fare: _currentRide!.fare,
+        status: 'arrived',
+        createdAt: _currentRide!.createdAt,
+      );
+    }
+    notifyListeners();
+  }
+
+  // Clear ride after viewing summary
+  void clearCurrentRide() {
+    _currentRide = null;
+    _rideStreamSubscription?.cancel();
+    _rideStreamSubscription = null;
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+    notifyListeners();
+  }
+
 
   // NEW: Cancel a ride
   Future<void> cancelRide(String rideId) async {
