@@ -1,0 +1,38 @@
+name: ride_ease
+description: "RideEase – Smart Ride Sharing App"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  
+  # Supabase
+  supabase_flutter: ^2.8.1
+  
+  # Sate Management
+  provider: ^6.1.2
+  
+  # Maps (OpenStreetMap)
+  flutter_map: ^7.0.0
+  latlong2: ^0.9.1
+  
+  # Location associated
+  geolocator: ^13.0.1
+  
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^4.5.1
+  google_fonts: ^6.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
