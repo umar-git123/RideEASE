@@ -156,10 +156,25 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Refresh user data from server
   Future<void> refreshUserData() async {
     if (_currentUserData != null) {
       await _fetchUserData(_currentUserData!.id);
+    }
+  }
+
+  Future<bool> resetPassword(String email) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+      await _authService.resetPassword(email);
+      return true;
+    } catch (e) {
+      _error = 'Failed to send reset email: ${e.toString()}';
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
