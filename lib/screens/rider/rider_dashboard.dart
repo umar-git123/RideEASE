@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/ride_provider.dart';
 import '../../widgets/map_widget.dart';
+import '../../services/saved_places_service.dart';
 import '../auth/login_screen.dart';
 import '../profile/profile_screen.dart';
 import '../settings/settings_screen.dart';
@@ -30,13 +32,19 @@ class RiderDashboard extends StatefulWidget {
 class _RiderDashboardState extends State<RiderDashboard> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final MapController _mapController = MapController();
+  final SavedPlacesService _savedPlacesService = SavedPlacesService();
   UserModel? _driverData;
   String? _locationError;
+  
+  // Saved places
+  SavedPlace? _homePlace;
+  SavedPlace? _workPlace;
 
   @override
   void initState() {
     super.initState();
     _initLocation();
+    _loadSavedPlaces();
   }
 
   Future<void> _initLocation() async {
@@ -50,6 +58,17 @@ class _RiderDashboardState extends State<RiderDashboard> {
       }
     }
   }
+  
+  Future<void> _loadSavedPlaces() async {
+    final home = await _savedPlacesService.getSavedPlaceByName('Home');
+    final work = await _savedPlacesService.getSavedPlaceByName('Work');
+    if (mounted) {
+      setState(() {
+        _homePlace = home;
+        _workPlace = work;
+      });
+    }
+  }
 
   Future<void> _fetchDriverData(String driverId) async {
     final userData = await AuthService().getUserData(driverId);
@@ -57,6 +76,52 @@ class _RiderDashboardState extends State<RiderDashboard> {
       setState(() {
         _driverData = userData;
       });
+    }
+  }
+  
+  void _onQuickAccessTap(SavedPlace? place, String label) async {
+    if (place != null && place.lat != null && place.lng != null) {
+      // Navigate to request ride with prefilled destination
+      Navigator.push(
+        context, 
+        MaterialPageRoute(
+          builder: (_) => RequestRideScreen(
+            prefilledDestination: LatLng(place.lat!, place.lng!),
+            prefilledDestinationAddress: place.address,
+          ),
+        ),
+      );
+    } else {
+      // Show dialog to set the location
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppTheme.backgroundCard,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text('Set $label Location'),
+          content: Text(
+            'Your $label location is not set yet. Would you like to set it now?',
+            style: TextStyle(color: AppTheme.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Set Location'),
+            ),
+          ],
+        ),
+      );
+      
+      if (result == true && mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SavedPlacesScreen()),
+        ).then((_) => _loadSavedPlaces()); // Reload after returning
+      }
     }
   }
 
@@ -72,6 +137,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
     }
 
     List<CustomMarker> markers = [];
+    List<LatLng>? routePoints;
     
     final defaultLocation = LatLng(40.7128, -74.0060);
     final mapCenter = rideProvider.currentLocation ?? defaultLocation;
@@ -87,27 +153,44 @@ class _RiderDashboardState extends State<RiderDashboard> {
     }
     
     if (currentRide != null) {
+      final pickupPoint = LatLng(currentRide.pickupLat, currentRide.pickupLng);
+      final destPoint = LatLng(currentRide.destinationLat, currentRide.destinationLng);
+      
+      // Build route points
       if (currentRide.status == 'accepted' && currentRide.driverLat != null && currentRide.driverLng != null) {
+        final driverPoint = LatLng(currentRide.driverLat!, currentRide.driverLng!);
+        
+        // Route: Driver -> Pickup -> Destination
+        routePoints = [driverPoint, pickupPoint, destPoint];
+        
         markers.add(CustomMarker(
           id: 'driver',
-          point: LatLng(currentRide.driverLat!, currentRide.driverLng!),
+          point: driverPoint,
           icon: Icons.directions_car,
           color: AppTheme.accentGold,
           title: 'Driver',
         ));
+      } else if (currentRide.status == 'arrived' || currentRide.status == 'in_progress') {
+        // Route: Pickup -> Destination
+        routePoints = [pickupPoint, destPoint];
+      } else {
+        // Just show pickup to destination line
+        routePoints = [pickupPoint, destPoint];
       }
       
       markers.add(CustomMarker(
         id: 'pickup',
-        point: LatLng(currentRide.pickupLat, currentRide.pickupLng),
+        point: pickupPoint,
         color: AppTheme.successColor,
         title: 'Pickup',
+        icon: Icons.trip_origin,
       ));
       markers.add(CustomMarker(
         id: 'dest',
-        point: LatLng(currentRide.destinationLat, currentRide.destinationLng),
+        point: destPoint,
         color: AppTheme.errorColor,
-        title: 'Dest',
+        title: 'Destination',
+        icon: Icons.place,
       ));
     }
 
@@ -121,6 +204,10 @@ class _RiderDashboardState extends State<RiderDashboard> {
             mapController: _mapController,
             initialPosition: mapCenter,
             markers: markers,
+            routePoints: routePoints,
+            routeColor: currentRide?.status == 'accepted' 
+                ? AppTheme.accentGold 
+                : AppTheme.primaryColor,
           ),
           
           // Location Error Banner
@@ -369,7 +456,10 @@ class _RiderDashboardState extends State<RiderDashboard> {
                   title: 'Saved Places',
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SavedPlacesScreen()));
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(builder: (_) => const SavedPlacesScreen()),
+                    ).then((_) => _loadSavedPlaces());
                   },
                 ),
                 _buildDrawerItem(
@@ -514,7 +604,26 @@ class _RiderDashboardState extends State<RiderDashboard> {
             );
           }
         },
-        onCall: () {},
+        onCall: () async {
+          if (_driverData?.phone != null && _driverData!.phone!.isNotEmpty) {
+            final Uri phoneUri = Uri(scheme: 'tel', path: _driverData!.phone);
+            if (await canLaunchUrl(phoneUri)) {
+              await launchUrl(phoneUri);
+            } else {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Could not open phone app')),
+                );
+              }
+            }
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Driver phone number not available')),
+              );
+            }
+          }
+        },
         onMessage: () {
           final authProvider = Provider.of<AuthProvider>(context, listen: false);
           Navigator.push(
@@ -591,14 +700,15 @@ class _RiderDashboardState extends State<RiderDashboard> {
               ),
             ),
             const SizedBox(height: 16),
-            // Quick access buttons
+            // Quick access buttons - now functional
             Row(
               children: [
                 Expanded(
                   child: _buildQuickAccessButton(
                     icon: Icons.home_outlined,
                     label: 'Home',
-                    onTap: () {},
+                    isSet: _homePlace?.lat != null && _homePlace?.lng != null,
+                    onTap: () => _onQuickAccessTap(_homePlace, 'Home'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -606,7 +716,8 @@ class _RiderDashboardState extends State<RiderDashboard> {
                   child: _buildQuickAccessButton(
                     icon: Icons.work_outline,
                     label: 'Work',
-                    onTap: () {},
+                    isSet: _workPlace?.lat != null && _workPlace?.lng != null,
+                    onTap: () => _onQuickAccessTap(_workPlace, 'Work'),
                   ),
                 ),
               ],
@@ -620,6 +731,7 @@ class _RiderDashboardState extends State<RiderDashboard> {
   Widget _buildQuickAccessButton({
     required IconData icon,
     required String label,
+    required bool isSet,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -627,23 +739,44 @@ class _RiderDashboardState extends State<RiderDashboard> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          color: AppTheme.backgroundElevated,
+          color: isSet 
+              ? AppTheme.primaryColor.withOpacity(0.1) 
+              : AppTheme.backgroundElevated,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(
+            color: isSet 
+                ? AppTheme.primaryColor.withOpacity(0.3) 
+                : Colors.white.withOpacity(0.1),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppTheme.textMuted, size: 18),
+            Icon(
+              icon, 
+              color: isSet ? AppTheme.primaryColor : AppTheme.textMuted, 
+              size: 18,
+            ),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: AppTheme.textSecondary,
+              style: TextStyle(
+                color: isSet ? AppTheme.primaryColor : AppTheme.textSecondary,
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
               ),
             ),
+            if (isSet) ...[
+              const SizedBox(width: 6),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: AppTheme.successColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
           ],
         ),
       ),

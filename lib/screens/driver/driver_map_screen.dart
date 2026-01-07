@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme.dart';
 import '../../providers/ride_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/map_widget.dart';
+import '../../models/user_model.dart';
+import '../../services/auth_service.dart';
 import '../chat/chat_screen.dart';
 
 class DriverMapScreen extends StatefulWidget {
@@ -16,12 +19,22 @@ class DriverMapScreen extends StatefulWidget {
 }
 
 class _DriverMapScreenState extends State<DriverMapScreen> {
+  UserModel? _riderData;
+
   @override
   void initState() {
     super.initState();
     final rideProvider = Provider.of<RideProvider>(context, listen: false);
     if (rideProvider.currentRide != null) {
       rideProvider.startLocationTracking(rideProvider.currentRide!.id);
+      _fetchRiderData(rideProvider.currentRide!.riderId);
+    }
+  }
+
+  Future<void> _fetchRiderData(String riderId) async {
+    final userData = await AuthService().getUserData(riderId);
+    if (mounted) {
+      setState(() => _riderData = userData);
     }
   }
 
@@ -50,14 +63,23 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             point: LatLng(ride.pickupLat, ride.pickupLng),
             color: AppTheme.successColor,
             title: 'Pickup',
+            icon: Icons.trip_origin,
           ),
           CustomMarker(
             id: 'dest',
             point: LatLng(ride.destinationLat, ride.destinationLng),
             color: AppTheme.errorColor,
             title: 'Destination',
+            icon: Icons.place,
           ),
         ];
+        
+        final isArrived = ride.status == 'arrived';
+        
+        // Build route points
+        List<LatLng>? routePoints;
+        final pickupPoint = LatLng(ride.pickupLat, ride.pickupLng);
+        final destPoint = LatLng(ride.destinationLat, ride.destinationLng);
 
         if (rideProvider.currentLocation != null) {
           markers.add(CustomMarker(
@@ -67,15 +89,28 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
             icon: Icons.directions_car,
             title: 'Me',
           ));
+          
+          // Route from driver to pickup to destination
+          if (isArrived) {
+            // Already at pickup, just show pickup to destination
+            routePoints = [pickupPoint, destPoint];
+          } else {
+            // Show full route: driver -> pickup -> destination
+            routePoints = [rideProvider.currentLocation!, pickupPoint, destPoint];
+          }
+        } else {
+          // Just show pickup to destination
+          routePoints = [pickupPoint, destPoint];
         }
 
-        final isArrived = ride.status == 'arrived';
 
         return Stack(
           children: [
             MapWidget(
               initialPosition: rideProvider.currentLocation ?? LatLng(ride.pickupLat, ride.pickupLng),
               markers: markers,
+              routePoints: routePoints,
+              routeColor: isArrived ? AppTheme.successColor : AppTheme.accentGold,
             ),
             Positioned(
               bottom: 0,
@@ -207,6 +242,21 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
                         // Action buttons
                         Row(
                           children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  side: BorderSide(color: AppTheme.successColor.withOpacity(0.5)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                icon: const Icon(Icons.phone, color: AppTheme.successColor),
+                                label: const Text('Call', style: TextStyle(color: AppTheme.successColor)),
+                                onPressed: () => _callRider(context),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: OutlinedButton.icon(
                                 style: OutlinedButton.styleFrom(
@@ -484,5 +534,25 @@ class _DriverMapScreenState extends State<DriverMapScreen> {
       ),
     );
   }
-}
 
+  Future<void> _callRider(BuildContext context) async {
+    if (_riderData?.phone != null && _riderData!.phone!.isNotEmpty) {
+      final Uri phoneUri = Uri(scheme: 'tel', path: _riderData!.phone);
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open phone app')),
+          );
+        }
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rider phone number not available')),
+        );
+      }
+    }
+  }
+}

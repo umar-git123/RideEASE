@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 -- 1. Create Users Table (Public profile linked to auth.users)
 create table public.users (
   id uuid references auth.users not null primary key,
@@ -67,7 +66,7 @@ create policy "Drivers can update assigned rides"
 
 -- 5. Realtime
 -- Go to Supabase > Database > Replication > Source and enable supabase_realtime for 'rides' table.
-=======
+
 -- 1. Create Users Table (Public profile linked to auth.users)
 create table public.users (
   id uuid references auth.users not null primary key,
@@ -136,4 +135,3 @@ create policy "Drivers can update assigned rides"
 
 -- 5. Realtime
 -- Go to Supabase > Database > Replication > Source and enable supabase_realtime for 'rides' table.
->>>>>>> 64697ae0ec150a7f0afdb7d74fa248eb77e0f73f
