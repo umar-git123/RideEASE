@@ -80,6 +80,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final bool isLandscape = size.height < size.width;
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundDark,
       body: Stack(
@@ -121,84 +124,87 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           ),
           // Main content
           Center(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                return FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo
-                        ScaleTransition(
-                          scale: _pulseAnimation,
-                          child: Container(
-                            padding: const EdgeInsets.all(28),
-                            decoration: BoxDecoration(
-                              gradient: AppTheme.primaryGradient,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.primaryColor.withOpacity(0.5),
-                                  blurRadius: 40,
-                                  spreadRadius: 10,
-                                ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Logo
+                          ScaleTransition(
+                            scale: _pulseAnimation,
+                            child: Container(
+                              padding: EdgeInsets.all(isLandscape ? 20 : 28),
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.primaryGradient,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primaryColor.withOpacity(0.6),
+                                    blurRadius: isLandscape ? 30 : 50,
+                                    spreadRadius: isLandscape ? 5 : 12,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.local_taxi_rounded,
+                                size: isLandscape ? 40 : 56,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: isLandscape ? 16 : 32),
+                          // App Name
+                          ShaderMask(
+                            shaderCallback: (bounds) => LinearGradient(
+                              colors: [
+                                AppTheme.primaryColor,
+                                AppTheme.primaryLight,
                               ],
-                            ),
-                            child: const Icon(
-                              Icons.local_taxi_rounded,
-                              size: 56,
-                              color: Colors.black,
+                            ).createShader(bounds),
+                            child: Text(
+                              'RideEase',
+                              style: TextStyle(
+                                fontSize: isLandscape ? 32 : 44,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 2,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 32),
-                        // App Name
-                        ShaderMask(
-                          shaderCallback: (bounds) => LinearGradient(
-                            colors: [
-                              AppTheme.primaryColor,
-                              AppTheme.primaryLight,
-                            ],
-                          ).createShader(bounds),
-                          child: const Text(
-                            'RideEase',
+                          const SizedBox(height: 12),
+                          Text(
+                            'Your Ride, Your Way',
                             style: TextStyle(
-                              fontSize: 44,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 2,
+                              fontSize: isLandscape ? 14 : 16,
+                              color: AppTheme.textSecondary,
+                              letterSpacing: 1,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Your Ride, Your Way',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: AppTheme.textSecondary,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 60),
-                        // Loading indicator
-                        SizedBox(
-                          width: 32,
-                          height: 32,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(
-                              AppTheme.primaryColor.withOpacity(0.7),
+                          SizedBox(height: isLandscape ? 30 : 60),
+                          // Loading indicator
+                          SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(
+                                AppTheme.primaryColor.withOpacity(0.7),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ],

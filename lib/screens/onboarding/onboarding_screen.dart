@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../auth/login_screen.dart';
 import '../../widgets/custom_button.dart';
+import '../../core/theme.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({Key? key}) : super(key: key);
@@ -34,110 +35,168 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final size = MediaQuery.of(context).size;
+    final bool isLandscape = size.height < size.width;
     
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: () {
-                   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-                },
-                child: const Text('Skip'),
-              ),
-            ),
-            Expanded(
+            // Page View with scrolling items
+            Positioned.fill(
               child: PageView.builder(
                 controller: _controller,
                 onPageChanged: (index) => setState(() => _currentPage = index),
                 itemCount: _pages.length,
                 itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                         Container(
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: theme.primaryColor.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            _pages[index]['icon'] as IconData,
-                            size: 100,
-                            color: theme.primaryColor,
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final bool isSmallHeight = constraints.maxHeight < 400;
+                      
+                      return SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                          child: IntrinsicHeight(
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                left: 32, 
+                                right: 32, 
+                                top: isSmallHeight ? 60 : 80,
+                                bottom: isSmallHeight ? 120 : 160,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(isSmallHeight ? 24 : 32),
+                                    decoration: BoxDecoration(
+                                      gradient: AppTheme.primaryGradient,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.primaryColor.withOpacity(0.5),
+                                          blurRadius: isSmallHeight ? 30 : 50,
+                                          spreadRadius: isSmallHeight ? 5 : 10,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      _pages[index]['icon'] as IconData,
+                                      size: isSmallHeight ? 60 : 100,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  SizedBox(height: isSmallHeight ? 24 : 48),
+                                  Text(
+                                    _pages[index]['title']! as String,
+                                    style: (isSmallHeight 
+                                      ? theme.textTheme.headlineSmall 
+                                      : theme.textTheme.headlineMedium)?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    _pages[index]['description']! as String,
+                                    textAlign: TextAlign.center,
+                                    style: (isSmallHeight 
+                                      ? theme.textTheme.bodyMedium 
+                                      : theme.textTheme.bodyLarge)?.copyWith(
+                                      color: theme.colorScheme.onSurface.withOpacity(0.8),
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 48),
-                        Text(
-                          _pages[index]['title']! as String,
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _pages[index]['description']! as String,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   );
                 },
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      _pages.length,
-                      (index) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: _currentPage == index ? 24 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _currentPage == index 
-                              ? theme.primaryColor 
-                              : theme.disabledColor.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(4),
+
+            // Removed Skip button from here as requested
+
+            // Bottom controls
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 24, 
+                  vertical: isLandscape ? 12 : 24
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      theme.scaffoldBackgroundColor.withOpacity(0),
+                      theme.scaffoldBackgroundColor.withOpacity(0.9),
+                      theme.scaffoldBackgroundColor,
+                    ],
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _pages.length,
+                        (index) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: _currentPage == index ? 24 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _currentPage == index 
+                                ? theme.primaryColor 
+                                : theme.disabledColor.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  CustomButton(
-                    text: _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
-                    onPressed: () {
-                      if (_currentPage < _pages.length - 1) {
-                        _controller.nextPage(
-                          duration: const Duration(milliseconds: 300), 
-                          curve: Curves.easeInOut
-                        );
-                      } else {
-                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-                      }
-                    },
-                  ),
-                ],
+                    SizedBox(height: isLandscape ? 16 : 32),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      child: CustomButton(
+                        text: _currentPage == _pages.length - 1 ? 'Get Started' : 'Next',
+                        onPressed: () {
+                          if (_currentPage < _pages.length - 1) {
+                            _controller.nextPage(
+                              duration: const Duration(milliseconds: 300), 
+                              curve: Curves.easeInOut
+                            );
+                          } else {
+                            _goToLogin();
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _goToLogin() {
+    Navigator.pushReplacement(
+      context, 
+      MaterialPageRoute(builder: (_) => const LoginScreen())
     );
   }
 }

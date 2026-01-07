@@ -91,44 +91,50 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
   Widget _buildOfflineState(ThemeData theme) {
     return Center(
-      child: Container(
-        margin: const EdgeInsets.all(40),
-        padding: const EdgeInsets.all(40),
-        decoration: AppTheme.cardDecoration(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppTheme.textMuted.withOpacity(0.1),
-                shape: BoxShape.circle,
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: AppTheme.cardDecoration(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.textMuted.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.cloud_off_outlined,
+                  size: 60,
+                  color: AppTheme.textMuted,
+                ),
               ),
-              child: Icon(
-                Icons.cloud_off_outlined,
-                size: 60,
-                color: AppTheme.textMuted,
+              const SizedBox(height: 24),
+              Text(
+                'You are Offline',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'You are Offline',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 8),
+              Text(
+                'Go online to receive ride requests',
+                style: TextStyle(color: AppTheme.textSecondary),
+                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Go online to receive ride requests',
-              style: TextStyle(color: AppTheme.textSecondary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => setState(() => _isOnline = true),
-              child: const Text('Go Online'),
-            ),
-          ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => setState(() => _isOnline = true),
+                  child: const Text('Go Online'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

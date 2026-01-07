@@ -229,44 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   const SizedBox(height: 28),
                   
-                  // Divider
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'or continue with',
-                          style: TextStyle(
-                            color: AppTheme.textMuted,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      Expanded(child: Divider(color: Colors.white.withOpacity(0.1))),
-                    ],
-                  ),
-                  
                   const SizedBox(height: 28),
-                  
-                  // Social Login Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSocialButton(
-                          icon: Icons.g_mobiledata_rounded,
-                          label: 'Google',
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildSocialButton(
-                          icon: Icons.apple_rounded,
-                          label: 'Apple',
-                        ),
-                      ),
-                    ],
-                  ),
                   
                   SizedBox(height: size.height * 0.06),
                   
